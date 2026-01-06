@@ -10,7 +10,7 @@ canvas.height = H;
 function generateBackground(){
   // Medieval scene - no need for random elements
 }
-generateBackground();kground();
+generateBackground();
 
 window.addEventListener('resize', ()=>{
   W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; generateBackground();
@@ -172,6 +172,23 @@ class Enemy{
     ctx.arc(-this.r*0.3, -this.r*0.6, this.r*0.4, 0, Math.PI*2);
     ctx.fill();
     
+    // Smiley face
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-this.r*0.25, -this.r*0.3, this.r*0.15, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(this.r*0.25, -this.r*0.3, this.r*0.15, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Smile
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, this.r*0.2, this.r*0.35, 0, Math.PI);
+    ctx.stroke();
+    
     // Weapon detail (spear)
     ctx.strokeStyle = '#8b7355';
     ctx.lineWidth = 1.5;
@@ -182,16 +199,16 @@ class Enemy{
     
     ctx.restore();
     
-    // Health bar with gradient
-    const barGrad = ctx.createLinearGradient(this.x-this.r, this.y-this.r-10, this.x+this.r, this.y-this.r-10);
+    // Health bar with gradient (underneath)
+    const barGrad = ctx.createLinearGradient(this.x-this.r, this.y+this.r+10, this.x+this.r, this.y+this.r+10);
     barGrad.addColorStop(0,'#d32f2f');
     barGrad.addColorStop(1,'#ff6e40');
     
     ctx.fillStyle='rgba(0,0,0,0.5)'; 
-    ctx.fillRect(this.x - this.r, this.y - this.r - 10, this.r*2, 4);
+    ctx.fillRect(this.x - this.r, this.y + this.r + 10, this.r*2, 4);
     
     ctx.fillStyle=barGrad; 
-    ctx.fillRect(this.x - this.r, this.y - this.r - 10, (this.health/this.maxHealth)*(this.r*2), 4);
+    ctx.fillRect(this.x - this.r, this.y + this.r + 10, (this.health/this.maxHealth)*(this.r*2), 4);
   }
 }
 Enemy.types = {
