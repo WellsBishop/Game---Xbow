@@ -6,8 +6,14 @@ let H = window.innerHeight;
 canvas.width = W;
 canvas.height = H;
 
+// Background generation - Medieval themed
+function generateBackground(){
+  // Medieval scene - no need for random elements
+}
+generateBackground();kground();
+
 window.addEventListener('resize', ()=>{
-  W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H;
+  W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; generateBackground();
 });
 
 const keys = {};
@@ -50,13 +56,50 @@ class Xbow{
   draw(){
     const ang = Math.atan2(mouse.y - this.y, mouse.x - this.x);
     ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(ang);
-    // draw bow body (simple curved limb)
-    ctx.lineWidth = 4; ctx.strokeStyle = '#6b3f1f'; ctx.beginPath(); ctx.moveTo(-10, -22); ctx.quadraticCurveTo(-18,0,-10,22); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(10, -18); ctx.quadraticCurveTo(18,0,10,18); ctx.stroke();
-    // grip
-    ctx.fillStyle = '#4a2b12'; ctx.fillRect(-4,-6,8,12);
-    // string
-    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-10,-22); ctx.lineTo(10,-18); ctx.moveTo(-10,22); ctx.lineTo(10,18); ctx.stroke();
+    
+    // Draw glow effect
+    ctx.shadowColor = 'rgba(200,150,100,0.5)';
+    ctx.shadowBlur = 15;
+    
+    // Crossbow stock (wooden handle)
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(-2, -8, 20, 16);
+    ctx.fillStyle = '#795548';
+    ctx.fillRect(0, -6, 18, 12);
+    
+    // Trigger mechanism
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath();
+    ctx.moveTo(8, -2); ctx.lineTo(10, -1); ctx.lineTo(10, 1); ctx.lineTo(8, 2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Crossbow arms (top and bottom curved limbs)
+    ctx.strokeStyle = '#8b6f47';
+    ctx.lineWidth = 3.5;
+    // Top limb
+    ctx.beginPath();
+    ctx.moveTo(4, -18);
+    ctx.quadraticCurveTo(0, -20, -8, -18);
+    ctx.stroke();
+    // Bottom limb
+    ctx.beginPath();
+    ctx.moveTo(4, 18);
+    ctx.quadraticCurveTo(0, 20, -8, 18);
+    ctx.stroke();
+    
+    // String/rope
+    ctx.strokeStyle = '#d4a574';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -18); ctx.quadraticCurveTo(-2, 0, -8, 18);
+    ctx.stroke();
+    
+    // Sight post
+    ctx.fillStyle = '#c0a080';
+    ctx.fillRect(14, -1.5, 4, 3);
+    
+    ctx.shadowColor = 'transparent';
     ctx.restore();
   }
 }
@@ -65,15 +108,34 @@ class Arrow{
   constructor(x,y,vx,vy,damage=1){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.r=5; this.life=2; this.damage=damage; }
   update(dt){ this.x += this.vx*dt; this.y += this.vy*dt; this.life -= dt; }
   draw(){
-    // draw an arrow (shaft + head + fletching)
+    // draw a crossbow bolt
     const ang = Math.atan2(this.vy, this.vx);
     ctx.save(); ctx.translate(this.x,this.y); ctx.rotate(ang);
-    // shaft
-    ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(10,0); ctx.stroke();
-    // head
-    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(6,-4); ctx.lineTo(6,4); ctx.closePath(); ctx.fill();
-    // fletching
-    ctx.fillStyle = '#ffd98a'; ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(-14,-4); ctx.lineTo(-14,4); ctx.closePath(); ctx.fill();
+    
+    // Bolt trail glow
+    const trailGrad = ctx.createLinearGradient(-10,0,10,0);
+    trailGrad.addColorStop(0,'rgba(200,150,80,0)');
+    trailGrad.addColorStop(0.5,'rgba(200,150,80,0.3)');
+    trailGrad.addColorStop(1,'rgba(200,150,80,0)');
+    ctx.fillStyle = trailGrad;
+    ctx.fillRect(-15,-1.5,20,3);
+    
+    // shaft with darker color (iron)
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fillRect(-12, -1, 22, 2);
+    ctx.strokeStyle = '#2a2a2a';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(-12, -1, 22, 2);
+    
+    // Broad head (wider than arrow)
+    ctx.fillStyle = '#8b7355';
+    ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(8,-3.5); ctx.lineTo(8,3.5); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#5a4a3a'; ctx.lineWidth = 0.5; ctx.stroke();
+    
+    // fletching (smaller for bolt)
+    ctx.fillStyle = '#c9a961';
+    ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(-10,-2.5); ctx.lineTo(-10,2.5); ctx.closePath(); ctx.fill();
+    
     ctx.restore();
   }
 }
@@ -87,18 +149,107 @@ class Enemy{
     this.vx = Math.cos(ang)*this.speed; this.vy = Math.sin(ang)*this.speed;
   }
   update(dt){ this.x += this.vx*dt; this.y += this.vy*dt; }
-  draw(){ ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(this.x - this.r, this.y - this.r - 8, (this.health/this.maxHealth)*(this.r*2), 4); }
+  draw(){ 
+    // Draw medieval enemy
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    
+    // Shadow beneath
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(0, this.r+2, this.r*1.2, 3, 0, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Enemy body
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(0, -2, this.r, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Helmet/shield highlight
+    ctx.fillStyle = this.type === 'heavy' ? '#a9a9a9' : 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    ctx.arc(-this.r*0.3, -this.r*0.6, this.r*0.4, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Weapon detail (spear)
+    ctx.strokeStyle = '#8b7355';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(this.r*0.7, -this.r*0.5);
+    ctx.lineTo(this.r*0.7, this.r*1.2);
+    ctx.stroke();
+    
+    ctx.restore();
+    
+    // Health bar with gradient
+    const barGrad = ctx.createLinearGradient(this.x-this.r, this.y-this.r-10, this.x+this.r, this.y-this.r-10);
+    barGrad.addColorStop(0,'#d32f2f');
+    barGrad.addColorStop(1,'#ff6e40');
+    
+    ctx.fillStyle='rgba(0,0,0,0.5)'; 
+    ctx.fillRect(this.x - this.r, this.y - this.r - 10, this.r*2, 4);
+    
+    ctx.fillStyle=barGrad; 
+    ctx.fillRect(this.x - this.r, this.y - this.r - 10, (this.health/this.maxHealth)*(this.r*2), 4);
+  }
 }
 Enemy.types = {
-  grunt: {health:1, speed: 70, r:14, color:'#ff7b7b'},
-  heavy: {health:4, speed: 40, r:22, color:'#ffb27b'},
-  runner: {health:1, speed:140, r:12, color:'#ffd27b'}
+  grunt: {health:1, speed: 70, r:14, color:'#8B4513'},  // Footsoldier (brown)
+  heavy: {health:4, speed: 40, r:22, color:'#696969'},   // Knight (gray armor)
+  runner: {health:1, speed:140, r:12, color:'#CD853F'}   // Archer (tan/bronze)
 };
 
 class Pickup{
   constructor(x,y,kind){ this.x=x; this.y=y; this.r=10; this.kind=kind; this.life=12; }
   update(dt){ this.life -= dt; }
-  draw(){ ctx.fillStyle = this.kind === 'fire' ? '#9fe7a4' : this.kind === 'spread' ? '#9fd3ff' : this.kind === 'damage' ? '#ffd18a' : '#ffe9a8'; ctx.beginPath(); ctx.rect(this.x-8,this.y-8,16,16); ctx.fill(); }
+  draw(){ 
+    // Draw medieval pickups with glow and rotation
+    const items = {
+      'fire': {color: '#ff6b6b', glow: '#ff4444', symbol: '⚔'},   // Red sword - rapid fire
+      'spread': {color: '#87ceeb', glow: '#4169e1', symbol: '◆'},   // Blue gem - spread
+      'damage': {color: '#ffd700', glow: '#ff8c00', symbol: '✦'},   // Gold star - damage
+      'heal': {color: '#90ee90', glow: '#228b22', symbol: '✚'}      // Green cross - heal
+    };
+    const data = items[this.kind] || items.fire;
+    
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate((Date.now() * 0.003) % (Math.PI*2));
+    
+    // Glow
+    ctx.shadowColor = data.glow;
+    ctx.shadowBlur = 14;
+    
+    // Treasure chest shape
+    ctx.fillStyle = data.color; 
+    ctx.beginPath();
+    ctx.moveTo(-8,-6);
+    ctx.lineTo(8,-6);
+    ctx.lineTo(8,4);
+    ctx.lineTo(-8,4);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Lid
+    ctx.fillStyle = data.color;
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(0, -6, 8, Math.PI, 0);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    
+    // Shine
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillRect(-6,-4,5,3);
+    
+    ctx.shadowColor = 'transparent';
+    ctx.restore();
+  }
 }
 
 const player = new Xbow();
@@ -143,8 +294,33 @@ function playSound(type){
 function resumeAudioOnGesture(){ if (!audioCtx) return; if (audioCtx.state === 'suspended') audioCtx.resume(); }
 
 // Particles
-class Particle{ constructor(x,y,vx,vy,life,color,r=2){ this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.life=life; this.color=color; this.r=r; } update(dt){ this.x += this.vx*dt; this.y += this.vy*dt; this.vy += 40*dt; this.life -= dt; } draw(){ ctx.globalAlpha = Math.max(0, this.life/1.2); ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; } }
-function spawnParticles(x,y,color,count=10){ for (let i=0;i<count;i++){ const ang = Math.random()*Math.PI*2; const sp = Math.random()*260 + 40; particles.push(new Particle(x,y, Math.cos(ang)*sp, Math.sin(ang)*sp, 0.6 + Math.random()*0.8, color, 2+Math.random()*2)); } }
+class Particle{ 
+  constructor(x,y,vx,vy,life,color,r=2){ 
+    this.x=x; this.y=y; this.vx=vx; this.vy=vy; this.life=life; this.color=color; this.r=r; this.maxLife=life;
+  } 
+  update(dt){ 
+    this.x += this.vx*dt; this.y += this.vy*dt; this.vy += 40*dt; this.life -= dt; 
+  } 
+  draw(){ 
+    const alpha = Math.max(0, this.life/this.maxLife);
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.fillStyle = this.color; 
+    ctx.beginPath(); 
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2); 
+    ctx.fill(); 
+    ctx.globalAlpha = 1; 
+  } 
+}
+
+function spawnParticles(x,y,color,count=10){ 
+  for (let i=0;i<count;i++){ 
+    const ang = Math.random()*Math.PI*2; 
+    const sp = Math.random()*260 + 40; 
+    const life = 0.6 + Math.random()*0.8;
+    const size = 2+Math.random()*3;
+    particles.push(new Particle(x,y, Math.cos(ang)*sp, Math.sin(ang)*sp, life, color, size)); 
+  } 
+}
 
 const WAVE_MAX = 100;
 function startWave(){
@@ -156,15 +332,25 @@ function startWave(){
 }
 
 function spawnEnemy(){
-  const side = Math.floor(rand(0,3));
-  let x,y;
-  if (side===0){ x = rand(20, W-20); y = H+30; }
-  else if (side===1){ x = -30; y = rand(100,H-100); }
-  else { x = W+30; y = rand(100,H-100); }
-  // choose type by wave
+  let x, y;
   const r = Math.random();
-  const t = r < Math.min(0.6,0.6+wave*0.01) ? 'grunt' : r < 0.85 ? 'runner' : 'heavy';
-  enemies.push(new Enemy(x,y, W/2, castle.y + castle.height/2, t));
+  
+  // 85% spawn from bottom (the path), 15% from sides
+  if (r < 0.85) {
+    x = rand(W/2 - 80, W/2 + 80);  // Narrow path up middle
+    y = H + 30;
+  } else if (r < 0.925) {
+    x = -30;
+    y = rand(H/2, H-50);
+  } else {
+    x = W + 30;
+    y = rand(H/2, H-50);
+  }
+  
+  // choose type by wave
+  const enemyRand = Math.random();
+  const t = enemyRand < Math.min(0.6, 0.6 + wave*0.01) ? 'grunt' : enemyRand < 0.85 ? 'runner' : 'heavy';
+  enemies.push(new Enemy(x, y, W/2, castle.y + castle.height/2, t));
 }
 
 function dropPickup(x,y){ const r = Math.random(); if (r < 0.18){ const kinds = ['fire','spread','damage','heal']; pickups.push(new Pickup(x,y,kinds[Math.floor(Math.random()*kinds.length)])); } }
@@ -213,25 +399,161 @@ function update(dt){ if (gameOver) return; player.update(dt);
   for (let i=particles.length-1;i>=0;i--){ particles[i].update(dt); if (particles[i].life <= 0) particles.splice(i,1); }
 }
 
-function drawCastle(){ // draw a stylized castle at top
+function drawCastle(){ 
+  // draw a stylized castle at top
   const cx = W/2; const cy = castle.y; const w = castle.width; const h = castle.height;
-  // base shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(cx - w/2 + 6, cy + 8, w, h);
-  // main wall
+  
+  // base shadow with gradient
+  const shadowGrad = ctx.createLinearGradient(0, cy + h - 20, 0, cy + h + 10);
+  shadowGrad.addColorStop(0, 'rgba(0,0,0,0.3)');
+  shadowGrad.addColorStop(1, 'rgba(0,0,0,0.05)');
+  ctx.fillStyle = shadowGrad;
+  ctx.fillRect(cx - w/2 + 6, cy + 8, w, h);
+  
+  // main wall with gradient
   const grad = ctx.createLinearGradient(cx - w/2, cy, cx + w/2, cy + h);
-  grad.addColorStop(0, '#36495f'); grad.addColorStop(1, '#2a3e52');
-  ctx.fillStyle = grad; ctx.fillRect(cx - w/2, cy, w, h);
-  // battlements
-  for (let i=-w/2;i<w/2;i+=40){ ctx.fillStyle='#3f5a72'; ctx.fillRect(cx+i+6, cy-22, 30, 22); ctx.fillStyle='#2f4b61'; ctx.fillRect(cx+i+10, cy-18, 22, 16); }
+  grad.addColorStop(0, '#5a7a94');
+  grad.addColorStop(0.5, '#3f5a72');
+  grad.addColorStop(1, '#2a3e52');
+  ctx.fillStyle = grad; 
+  ctx.fillRect(cx - w/2, cy, w, h);
+  
+  // Stone texture lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  for (let i=0; i<8; i++){
+    ctx.beginPath();
+    ctx.moveTo(cx-w/2, cy+i*h/8);
+    ctx.lineTo(cx+w/2, cy+i*h/8);
+    ctx.stroke();
+  }
+  
+  // battlements with glow
+  ctx.shadowColor = 'rgba(100,150,200,0.4)';
+  ctx.shadowBlur = 8;
+  for (let i=-w/2;i<w/2;i+=40){ 
+    const bgrad = ctx.createLinearGradient(cx+i+6, cy-22, cx+i+6, cy);
+    bgrad.addColorStop(0, '#5a7a94');
+    bgrad.addColorStop(1, '#3f5a72');
+    ctx.fillStyle=bgrad; 
+    ctx.fillRect(cx+i+6, cy-22, 30, 22); 
+    ctx.fillStyle='#2f4b61'; 
+    ctx.fillRect(cx+i+10, cy-18, 22, 16); 
+  }
+  ctx.shadowColor = 'transparent';
+  
   // gate with stone arch
   const gateW = 120; const gateH = 68; const gx = cx - gateW/2; const gy = cy + h - gateH;
-  ctx.fillStyle='#2b2b2b'; ctx.fillRect(gx, gy, gateW, gateH);
-  ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=2; ctx.strokeRect(gx, gy, gateW, gateH);
-  // arch lines
-  ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.moveTo(gx, gy+8); ctx.quadraticCurveTo(cx, gy-22, gx+gateW, gy+8); ctx.stroke();
+  
+  // Gate glow based on health
+  const healthGlow = castle.health > 50 ? '#00ff00' : castle.health > 25 ? '#ffaa00' : '#ff4444';
+  ctx.shadowColor = healthGlow;
+  ctx.shadowBlur = 20;
+  
+  ctx.fillStyle='#1a1a1a'; 
+  ctx.fillRect(gx, gy, gateW, gateH);
+  ctx.strokeStyle=healthGlow; 
+  ctx.lineWidth=2; 
+  ctx.strokeRect(gx, gy, gateW, gateH);
+  
+  // arch lines with glow
+  ctx.strokeStyle='rgba(100,150,200,0.4)'; 
+  ctx.lineWidth=2; 
+  ctx.beginPath(); 
+  ctx.moveTo(gx, gy+8); 
+  ctx.quadraticCurveTo(cx, gy-22, gx+gateW, gy+8); 
+  ctx.stroke();
+  
+  ctx.shadowColor = 'transparent';
 }
 
-function draw(){ ctx.clearRect(0,0,W,H); drawCastle(); player.draw(); for (const a of arrows) a.draw(); for (const e of enemies) e.draw(); for (const p of pickups) p.draw(); for (const t of particles) t.draw();
+function drawBackground(){
+  // Medieval outdoor background - sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, '#87ceeb');      // Light blue sky
+  skyGrad.addColorStop(0.6, '#b0d4f1');    // Lighter at horizon
+  skyGrad.addColorStop(1, '#8b7355');      // Ground (dirt)
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  for (let i = 0; i < 5; i++){
+    const cloudX = ((Date.now() * 0.00003 + i * 0.2) % 1.5) * W - W*0.25;
+    const cloudY = 60 + i * 40;
+    ctx.beginPath();
+    ctx.arc(cloudX, cloudY, 30, 0, Math.PI*2);
+    ctx.arc(cloudX+35, cloudY, 40, 0, Math.PI*2);
+    ctx.arc(cloudX+70, cloudY, 30, 0, Math.PI*2);
+    ctx.fill();
+  }
+  
+  // Stone path leading up to castle
+  const pathStartX = W/2;
+  const pathEndX = W/2;
+  const pathStartY = H;
+  const pathEndY = castle.y + castle.height + 40;
+  const pathWidth = 140;
+  
+  // Path gradient (stone/dirt)
+  const pathGrad = ctx.createLinearGradient(pathStartX - pathWidth/2, pathStartY, pathEndX - pathWidth/2, pathEndY);
+  pathGrad.addColorStop(0, '#9b8b7e');  // Lighter at bottom
+  pathGrad.addColorStop(1, '#7a6a5d');  // Darker at top
+  ctx.fillStyle = pathGrad;
+  ctx.beginPath();
+  ctx.moveTo(pathStartX - pathWidth/2, pathStartY);
+  ctx.lineTo(pathStartX + pathWidth/2, pathStartY);
+  ctx.lineTo(pathEndX + pathWidth/2, pathEndY);
+  ctx.lineTo(pathEndX - pathWidth/2, pathEndY);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Path edges (stone)
+  ctx.strokeStyle = '#5a4a3d';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  // Stone pavers on path
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 15; i++){
+    const y = pathStartY - (i / 14) * (pathStartY - pathEndY);
+    const width = pathWidth * (1 - (i / 14) * 0.3);
+    const offsetX = pathStartX - width/2;
+    
+    ctx.beginPath();
+    ctx.moveTo(offsetX, y);
+    ctx.lineTo(offsetX + width, y);
+    ctx.stroke();
+  }
+  
+  // Grass along path edges
+  ctx.fillStyle = '#4a7c2c';
+  ctx.beginPath();
+  ctx.moveTo(0, pathStartY);
+  ctx.lineTo(pathStartX - pathWidth/2, pathStartY);
+  ctx.lineTo(pathStartX - pathWidth/2, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.beginPath();
+  ctx.moveTo(pathStartX + pathWidth/2, pathStartY);
+  ctx.lineTo(W, pathStartY);
+  ctx.lineTo(W, H);
+  ctx.lineTo(pathStartX + pathWidth/2, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function draw(){ 
+  drawBackground();
+  drawCastle(); 
+  player.draw(); 
+  for (const a of arrows) a.draw(); 
+  for (const e of enemies) e.draw(); 
+  for (const p of pickups) p.draw(); 
+  for (const t of particles) t.draw();
 
   // Draw top-left HUD box (clear, consistent, no overlap)
   const hudX = 16, hudY = 16, hudW = 300, hudH = 120;
